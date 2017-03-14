@@ -1,0 +1,23 @@
+---
+- hosts: regions
+  connection: local
+  gather_facts: no
+
+  vars:
+    ansible_python_interpreter: python2.7
+    smtp_api_endpoint: "inbound-smtp.{{ aws_region }}.amazonaws.com"
+    smtp_endpoint: "email-smtp.{{ aws_region }}.amazonaws.com"
+
+  tasks:
+    - name: Create MX record
+      route53:
+        command: create
+        record: "{{ mx_domain }}"
+        zone: "{{ (mx_zone | d(False)) or omit }}"
+        hosted_zone_id: "{{ (mx_zone_id | d(False)) or omit }}"
+        type: MX
+        ttl: "{{ mx_ttl | d(3600) }}"
+        value: "10 {{ smtp_endpoint }}"
+        overwrite: yes
+
+# vim: ft=ansible

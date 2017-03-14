@@ -2,6 +2,8 @@ PYDEV_VER  := 2.7
 PYDEV_VENV := venv
 
 
+.DEFAULT_GOAL := run
+
 .PHONY : venv
 venv   :
 	virtualenv -p python$(PYDEV_VER) $(PYDEV_VENV)
@@ -13,3 +15,12 @@ prod   : venv
 .PHONY : dev
 dev    : prod
 	$(PYDEV_VENV)/bin/pip install -r dev-requirements.txt
+
+.PHONY : run
+run    :
+	ansible-playbook \
+		-i inventory/ \
+		-l us-east-1 \
+		site.yml \
+		--diff \
+		-vv

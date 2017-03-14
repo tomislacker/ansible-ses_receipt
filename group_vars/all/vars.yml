@@ -1,0 +1,5 @@
+---
+mx_zone: tomasik.io
+mx_domain: "testing.{{ mx_zone }}"
+
+# vim: ft=ansible
