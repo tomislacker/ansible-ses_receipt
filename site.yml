@@ -25,4 +25,10 @@
         name: "{{ s3_bucket }}"
         policy: "{{ lookup('template', 'ses_to_s3_policy.json.j2') }}"
 
+    - name: Remove AMAZON_SES_SETUP_NOTIFICATION key
+      s3:
+        bucket: "{{ s3_bucket }}"
+        object: "{{ s3_prefix | d('') }}/AMAZON_SES_SETUP_NOTIFICATION"
+        mode: delobj
+
 # vim: ft=ansible
