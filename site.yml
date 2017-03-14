@@ -20,4 +20,8 @@
         value: "10 {{ smtp_endpoint }}"
         overwrite: yes
 
+    - name: Create S3 bucket
+      s3_bucket:
+        name: "{{ s3_bucket }}"
+
 # vim: ft=ansible
