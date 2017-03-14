@@ -1,0 +1,4 @@
+localhost       ansible_connection=local ansible_python_interpreter=python2.7
+
+[regions]
+us-east-1 aws_region=us-east-1
