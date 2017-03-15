@@ -47,6 +47,11 @@
         region: "{{ aws_region }}"
       register: event_topic
 
+    - name: Prepare Lambda deploy package
+      shell: zip -r ../lambda.zip *
+      args:
+        chdir: lambda/
+
     - name: Remove AMAZON_SES_SETUP_NOTIFICATION key
       s3:
         bucket: "{{ s3_bucket }}"
