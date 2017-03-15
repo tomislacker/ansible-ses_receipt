@@ -30,6 +30,17 @@
         name: "{{ ses_rule_set_name }}"
         activate: yes
 
+    - name: Create catch-all SES receipt rule
+      ses_rule:
+        name: "{{ ses_rule_set_name }}01"
+        ruleset: "{{ ses_rule_set_name }}"
+        recipients:
+          - "{{ mx_domain }}"
+        actions:
+          - S3Action:
+              BucketName: "{{ s3_bucket }}"
+              ObjectKeyPrefix: "{{ s3_key_prefix | d('') }}"
+
     - name: Remove AMAZON_SES_SETUP_NOTIFICATION key
       s3:
         bucket: "{{ s3_bucket }}"
