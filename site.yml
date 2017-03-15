@@ -41,6 +41,12 @@
               BucketName: "{{ s3_bucket }}"
               ObjectKeyPrefix: "{{ s3_key_prefix | d('') }}"
 
+    - name: Create SNS topic
+      sns_topic:
+        name: "{{ sns_topic_name }}"
+        region: "{{ aws_region }}"
+      register: event_topic
+
     - name: Remove AMAZON_SES_SETUP_NOTIFICATION key
       s3:
         bucket: "{{ s3_bucket }}"
