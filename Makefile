@@ -16,8 +16,12 @@ prod   : venv
 dev    : prod
 	$(PYDEV_VENV)/bin/pip install -r dev-requirements.txt
 
+.PHONY : deps
+deps   :
+	make -C library
+
 .PHONY : run
-run    :
+run    : deps
 	ansible-playbook \
 		-i inventory/ \
 		-l us-east-1 \
