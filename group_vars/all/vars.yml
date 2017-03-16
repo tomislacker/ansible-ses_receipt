@@ -1,7 +1,9 @@
 ---
+lambda_name: ses-inbound-processing
 mx_zone: tomasik.io
 mx_domain: "testing.{{ mx_zone }}"
 s3_bucket: c754a14d-d1d3-49d6-8651-d88471505342
 ses_rule_set_name: poc-inbound-processing
+sns_topic_name: ses-s3-events
 
 # vim: ft=ansible
