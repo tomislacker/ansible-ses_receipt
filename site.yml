@@ -16,7 +16,7 @@
         zone: "{{ (mx_zone | d(False)) or omit }}"
         hosted_zone_id: "{{ (mx_zone_id | d(False)) or omit }}"
         type: MX
-        ttl: "{{ mx_ttl | d(3600) }}"
+        ttl: "{{ mx_ttl | d(300) }}"
         value: "10 {{ smtp_endpoint }}"
         overwrite: yes
 
