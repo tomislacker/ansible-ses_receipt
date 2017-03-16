@@ -6,7 +6,7 @@
   vars:
     ansible_python_interpreter: python2.7
     smtp_api_endpoint: "inbound-smtp.{{ aws_region }}.amazonaws.com"
-    smtp_endpoint: "email-smtp.{{ aws_region }}.amazonaws.com"
+    smtp_endpoint: "inbound-smtp.{{ aws_region }}.amazonaws.com"
 
   tasks:
     - name: Create MX record
