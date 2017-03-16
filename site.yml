@@ -52,6 +52,60 @@
       args:
         chdir: lambda/
 
+    - name: Create Lambda execution role
+      iam:
+        iam_type: role
+        name: "{{ lambda_name }}-role"
+        state: present
+        trust_policy:
+          Version: '2012-10-17'
+          Statement:
+            - Action: sts:AssumeRole
+              Effect: Allow
+              Principal:
+                Service: lambda.amazonaws.com
+      register: lambda_role
+
+    - name: Add policy to Lambda execution role
+      iam_policy:
+        iam_type: role
+        iam_name: "{{ lambda_name }}-role"
+        policy_name: "{{ lambda_name }}-policy"
+        state: present
+        policy_json: "{{ lookup('template', 'lambda_to_s3_policy.json.j2') }}"
+
+    - name: Deploy Lambda package
+      lambda:
+        name: "{{ lambda_name }}"
+        state: present
+        zip_file: lambda.zip
+        runtime: 'python2.7'
+        handler: 'lambda.lambda_handler'
+        role: "arn:aws:iam::{{ lookup('aws_account_id') }}:role/{{ lambda_name }}-role"
+      register: lambda_func
+
+    - name: Enable S3 to invoke Lambda
+      lambda_permission:
+        name: "{{ lambda_name }}"
+        id: "{{ lambda_name }}-s3-invoke"
+        policy:
+          Action: lambda:InvokeFunction
+          Principal: s3.amazonaws.com
+          SourceArn: "arn:aws:s3:::{{ s3_bucket }}"
+          SourceAccount: "{{ lookup('aws_account_id') }}"
+      tags: event
+
+    - name: Configure S3 event
+      s3_event:
+        bucket: "{{ s3_bucket }}"
+        prefix: "{{ (s3_key_prefix | d(False)) or omit }}"
+        id: "s3-to-ses-{{ lambda_name }}"
+        lambda_function_arn: "{{ lambda_name }}"
+        region: "{{ aws_region }}"
+        events:
+          - 's3:ObjectCreated:Put'
+      tags: event
+
     - name: Remove AMAZON_SES_SETUP_NOTIFICATION key
       s3:
         bucket: "{{ s3_bucket }}"
