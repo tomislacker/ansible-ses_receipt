@@ -1,13 +1,40 @@
 #!/usr/bin/python
 
+# -*- coding: utf-8 -*-
+#
+# (c) 2017, Ben Tomasik <ben@tomasik.io>
+#
+# This file is part of Ansible
+#
+# Ansible is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Ansible is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Ansible. If not, see <http://www.gnu.org/licenses/>.
+
+
+ANSIBLE_METADATA = {'metadata_version': '1.0',
+                    'status': ['preview'],
+                    'supported_by': 'community'}
+
+
 DOCUMENTATION = """
+---
 module: ses_rule_set
 short_description: Manages SES inbound receipt rule sets
 description:
     - The M(ses_rule_set) module allows you to create, delete, and manage SES receipt rule sets
-version_added: 2.3
+version_added: 2.4
 author:
   - "Ben Tomasik (@tomislacker)"
+requirements: [ "boto3","botocore" ]
 options:
   name:
     description:
@@ -19,41 +46,47 @@ options:
     required: False
     default: present
     choices: ["absent", "present"]
-  activate:
+  is_active:
     description:
       - Whether or not to set this rule set as the active one
     required: False
     default: False
 extends_documentation_fragment: aws
-requirements: [ "boto3","botocore" ]
 """
 
 EXAMPLES = """
-
-- name: Create default rule set
+# Note: None of these examples set aws_access_key, aws_secret_key, or region.
+# It is assumed that their matching environment variables are set.
+---
+- name: Create default rule set and activate it if not already
   ses_rule_set:
     name: default-rule-set
+    is_active: yes
 
+- name: Create some arbitrary rule set but do not activate it
+  ses_rule_set:
+    name: arbitrary-rule-set
 """
 
-RETURN = ""
+RETURN = """
+changed:
+  description: if a SES rule set has been created and/or activated, or deleted
+  returned: always
+  type: bool
+  sample:
+    changed: true
+"""
 
-try:
-    import boto3
-    HAS_BOTO3 = True
-except ImportError:
-    HAS_BOTO3 = False
-
-try:
-    import botocore
-    HAS_BOTOCORE = True
-except ImportError:
-    HAS_BOTOCORE = False
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.ec2 import HAS_BOTO3
+from ansible.module_utils.ec2 import ec2_argument_spec
+from ansible.module_utils.ec2 import get_aws_connection_info
+from ansible.module_utils.ec2 import boto3_conn
 
 
 def rule_set_exists(ses_client, name):
     rule_sets = ses_client.list_receipt_rule_sets()['RuleSets']
-    return len([s for s in rule_sets if s['Name'].lower() == name.lower()]) > 0
+    return any([s for s in rule_sets if s['Name'].lower() == name.lower()])
 
 
 def main():
@@ -61,7 +94,7 @@ def main():
     argument_spec.update(dict(
         name=dict(type='str', required=True),
         state=dict(type='str', default='present', choices=['present', 'absent']),
-        activate=dict(type='bool', default=False),
+        is_active=dict(type='bool', default=False),
     ))
 
     module = AnsibleModule(argument_spec=argument_spec,
@@ -69,15 +102,12 @@ def main():
 
     name = module.params.get('name').lower()
     state = module.params.get('state').lower()
-    activate = module.params.get('activate')
+    is_active = module.params.get('is_active')
     check_mode = module.check_mode
     changed = False
 
     if not HAS_BOTO3:
         module.fail_json(msg='Python module "boto3" is missing, please install it')
-
-    if not HAS_BOTOCORE:
-        module.fail_json(msg='Python module "botocore" is missing, please install it')
 
     region, ec2_url, aws_connect_kwargs = get_aws_connection_info(module, boto3=True)
     if not region:
@@ -114,9 +144,13 @@ def main():
                     module.fail_json(msg=str(e))
 
         # Set active if requested
-        if activate:
+        if is_active:
             # First determine if it's the active rule set
-            active_name = client.describe_active_receipt_rule_set()['Metadata']['Name'].lower()
+            try:
+                active_name = client.describe_active_receipt_rule_set()['Metadata']['Name'].lower()
+            except KeyError:
+                # Metadata was not set meaning there is no active rule set
+                active_name = ""
 
             if name != active_name:
                 changed = True
@@ -130,9 +164,6 @@ def main():
 
     module.exit_json(changed=changed)
 
-
-from ansible.module_utils.basic import *
-from ansible.module_utils.ec2 import *
 
 if __name__ == '__main__':
     main()

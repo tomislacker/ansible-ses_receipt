@@ -1,13 +1,40 @@
 #!/usr/bin/python
 
+# -*- coding: utf-8 -*-
+#
+# (c) 2017, Ben Tomasik <ben@tomasik.io>
+#
+# This file is part of Ansible
+#
+# Ansible is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Ansible is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Ansible. If not, see <http://www.gnu.org/licenses/>.
+
+
+ANSIBLE_METADATA = {'metadata_version': '1.0',
+                    'status': ['preview'],
+                    'supported_by': 'community'}
+
+
 DOCUMENTATION = """
+---
 module: ses_rule
 short_description: Manages SES inbound receipt rules
 description:
-    - The M(ses_rule_set) module allows you to create, delete, and manage SES receipt rules
-version_added: 2.3
+    - Allows creation, deletion, and management of SES receipt rules
+version_added: 2.4
 author:
   - "Ben Tomasik (@tomislacker)"
+requirements: [ "boto3","botocore" ]
 options:
   name:
     description:
@@ -51,7 +78,6 @@ options:
     required: False
     default: False
 extends_documentation_fragment: aws
-requirements: [ "boto3","botocore" ]
 """
 
 EXAMPLES = """
@@ -71,19 +97,23 @@ EXAMPLES = """
 
 """
 
-RETURN = ""
+RETURN = """
+changed:
+  description: >
+      if a SES rule has been created or deleted. NOTE: If a rule exists, it's
+      always considered a change whether or not one occurred due to the lack
+      of implementation in change detection.
+  returned: always
+  type: bool
+  sample:
+    changed: true
+"""
 
-try:
-    import boto3
-    HAS_BOTO3 = True
-except ImportError:
-    HAS_BOTO3 = False
-
-try:
-    import botocore
-    HAS_BOTOCORE = True
-except ImportError:
-    HAS_BOTOCORE = False
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.ec2 import HAS_BOTO3
+from ansible.module_utils.ec2 import ec2_argument_spec
+from ansible.module_utils.ec2 import get_aws_connection_info
+from ansible.module_utils.ec2 import boto3_conn
 
 
 def rule_set_exists(ses_client, name):
@@ -111,7 +141,10 @@ def main():
     ))
 
     module = AnsibleModule(argument_spec=argument_spec,
-                           supports_check_mode=True)
+                           supports_check_mode=True,
+                           required_if=[
+                               ['state', 'present', ['actions', 'recipients']],
+                           ])
 
     name = module.params.get('name').lower()
     ruleset = module.params.get('ruleset').lower()
@@ -128,15 +161,6 @@ def main():
 
     if not HAS_BOTO3:
         module.fail_json(msg='Python module "boto3" is missing, please install it')
-
-    if not HAS_BOTOCORE:
-        module.fail_json(msg='Python module "botocore" is missing, please install it')
-
-    if len(recipients) == 0 and state == 'present':
-        module.fail_json(msg='No recipients provided')
-
-    if len(actions) == 0 and state == 'present':
-        module.fail_json(msg='No actions provided')
 
     region, ec2_url, aws_connect_kwargs = get_aws_connection_info(module, boto3=True)
     if not region:
@@ -207,9 +231,6 @@ def main():
 
     module.exit_json(changed=changed)
 
-
-from ansible.module_utils.basic import *
-from ansible.module_utils.ec2 import *
 
 if __name__ == '__main__':
     main()

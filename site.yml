@@ -28,7 +28,7 @@
     - name: Create SES receipt rule set
       ses_rule_set:
         name: "{{ ses_rule_set_name }}"
-        activate: yes
+        is_active: yes
 
     - name: Create catch-all SES receipt rule
       ses_rule:
