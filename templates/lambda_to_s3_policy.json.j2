@@ -16,6 +16,16 @@
                 "s3:Get*"
             ],
             "Resource": "arn:aws:s3:::{{ s3_bucket }}/*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sqs:SendMessage",
+                "sqs:SendMessageBatch",
+                "sqs:GetQueueUrl",
+                "sqs:GetQueueAttributes"
+            ],
+            "Resource": "arn:aws:sqs:*:*:{{ sqs_queue_name }}"
         }
     ]
 }
